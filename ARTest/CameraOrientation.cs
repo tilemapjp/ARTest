@@ -1,9 +1,8 @@
 ﻿using System;
-//using MonoTouch.UIKit;
-//using MonoTouch.CoreLocation;
 
 namespace ARTest
 {
+	// デバイスの方向を定義するenum
 	public enum CameraOrientationConstant : int
 	{
 		Portrait = 0,
@@ -12,39 +11,47 @@ namespace ARTest
 		LandscapeLeftUp = -90
 	}
 		
+	// カメラの方向を計算するクラス
 	public class CameraOrientation
 	{
+		// シングルトン用
 		private static CameraOrientation _manager = null;
 
+		// 方角（北=0,東=90,南=180,西=270）
 		public double Azimuth { get; private set; }
+		// 仰角（正）/俯角（負）
 		public double Pitch   { get; private set; }
+		// 水平角（右回転正、左回転負）
 		public double Roll    { get; private set; }
 
+		// 加速度X,Y,Z
 		public double AccelX  { get; private set; }
 		public double AccelY  { get; private set; }
 		public double AccelZ  { get; private set; }
 
+		// 磁気X,Y,Z
 		public double MagnetX { get; private set; }
 		public double MagnetY { get; private set; }
 		public double MagnetZ { get; private set; }
 
-		//public UIDeviceOrientation Orientation { get; private set; }
-
+		// 磁気偏角
 		public double AzimuthOffset { get; private set; }
 
+		// 水平角をゼロとしたいデバイスの向きを、CameraOrientationConstantで指定。デフォルトはPortrait
 		public CameraOrientationConstant ScreenOrientation { get; private set; }
 
 		private bool Guard = false;
 
-		public CameraOrientation ()
+		// Constructor
+		public CameraOrientation (CameraOrientationConstant wantOrientation = CameraOrientationConstant.Portrait)
 		{
 			Azimuth = 0.0;
 			Pitch   = 0.0;
 			Roll    = 0.0;
-			ScreenOrientation = CameraOrientationConstant.LandscapeRightUp;
-			//Orientation = UIDeviceOrientation.Portrait;
+			ScreenOrientation = wantOrientation;
 		}
 
+		// Singleton method
 		public static CameraOrientation manager()
 		{
 			if (_manager == null) {
@@ -53,75 +60,35 @@ namespace ARTest
 			return _manager;
 		}
 
-		public void SetScreenOrientation (CameraOrientationConstant orientation)
-		{
-			ScreenOrientation = orientation;
-		}
-
-		public void SetAccelValues(double X, double Y, double Z)//(UIAcceleration accel)
+		// 加速度の3軸値を変更がかかったタイミングで更新
+		public void SetAccelValues(double X, double Y, double Z)
 		{
 			AccelX = X;
 			AccelY = Y;
 			AccelZ = Z;
 		}
 
-		public void SetMagnetValues(double X, double Y, double Z)//(CLHeading heading)
+		// 磁気の3軸値を変更がかかったタイミングで更新
+		public void SetMagnetValues(double X, double Y, double Z)
 		{
 			MagnetX = X;
 			MagnetY = Y;
 			MagnetZ = Z;
 		}
 
+		// 磁気偏角を変更がかかったタイミングで更新
 		public void SetOffsetValue (double offset)
 		{
 			AzimuthOffset = offset * Math.PI / 180.0;
 		}
 
+		// 絶対値計算用
 		static public double GetAbsoluteValue3D(double x, double y, double z)
 		{
 			return Math.Sqrt (x * x + y * y + z * z);
 		}
-
-		/*public void CalcurateOrientation () {
-			Console.WriteLine ("Bx {0} By {1} Bz {2} Ax {3} Ay {4} Az {5}", MagnetX, MagnetY, MagnetZ, AccelX, AccelY, AccelZ);
-			double hX, hY, hZ;
-			double mX, mY, mZ;
-			double aX, aY, aZ;
-
-			double accelAbsolute  = GetAbsoluteValue3D (AccelX,  AccelY,  AccelZ);
-			double magnetAbsolute = GetAbsoluteValue3D (MagnetX, MagnetY, MagnetZ);
-
-			hX = -(MagnetY * AccelZ - MagnetZ * AccelY) / (accelAbsolute * magnetAbsolute);
-			hY = -(MagnetX * AccelZ - MagnetZ * AccelX) / (accelAbsolute * magnetAbsolute);
-			hZ = -(MagnetX * AccelY - MagnetY * AccelX) / (accelAbsolute * magnetAbsolute);
-
-			mX = (MagnetX * (AccelY * AccelY - AccelZ * AccelZ) -
-				MagnetY * AccelX * AccelY - MagnetZ * AccelZ * AccelX)
-				/ (accelAbsolute * accelAbsolute * magnetAbsolute);
-			mY = (MagnetY * (AccelZ * AccelZ - AccelX * AccelX) -
-				MagnetZ * AccelY * AccelZ - MagnetX * AccelX * AccelY)
-				/ (accelAbsolute * accelAbsolute * magnetAbsolute);
-			mZ = (MagnetZ * (AccelX * AccelX - AccelY * AccelY) -
-				MagnetX * AccelZ * AccelX - MagnetY * AccelY * AccelZ)
-				/ (accelAbsolute * accelAbsolute * magnetAbsolute);
-
-			aX = -AccelX / accelAbsolute;
-			aY = -AccelY / accelAbsolute;
-			aZ = -AccelZ / accelAbsolute;
-
-			//Azimuth = -Math.Atan2 (mX, hX) + AzimuthOffset;
-			Azimuth = Math.Atan2 (-mZ, -hZ) + AzimuthOffset;
-
-			while (Azimuth < 0)
-				Azimuth += Math.PI * 2.0;
-			//Pitch   = -Math.Asin (aZ);
-			Pitch = Math.Asin (-aZ);
-			//Roll    = Math.Atan2 (aX, aY);
-			Roll = Math.Atan2 (aX, -aY);
-
-			//Console.WriteLine ("{0} {1} {2}", Azimuth, Pitch, Roll);
-		}*/
-
+			
+		// カメラの方向計算 (http://qiita.com/kochizufan/items/16bc7524105a5e4617be)
 		public bool CalcurateOrientation () {
 			double a, b, c, d, e, f, g, h, i;
 
@@ -175,21 +142,10 @@ namespace ARTest
 				if (Roll >= Math.PI) {
 					Roll -= Math.PI * 2.0;
 				}
-				/*var edge = 0.5235987755982988f;
-				if (Math.Abs (Roll) < edge && Orientation != UIDeviceOrientation.Portrait) {
-					Orientation = UIDeviceOrientation.Portrait;
-				} else if (Roll < -2.0f * edge && Orientation != UIDeviceOrientation.LandscapeLeft) {
-					Orientation = UIDeviceOrientation.LandscapeLeft;
-				} else if (Roll > 2.0f * edge && Orientation != UIDeviceOrientation.LandscapeRight) {
-					Orientation = UIDeviceOrientation.LandscapeRight;
-				}
-				Console.WriteLine ("Orientation {0}",Orientation);*/
 			}
 
 			Guard = false;
 			return true;
-
-			//Console.WriteLine ("{0} {1} {2}", Azimuth, Pitch, Roll);
 		}
 	}
 }

@@ -29,7 +29,12 @@ namespace ARTest.iOS
 			motionMan = new CMMotionManager ();
 		}
 
-		public async Task StartAsync()
+		public Task<bool> StartAsync()
+		{
+			return Task.Run(() => Start());
+		}
+
+		public bool Start()
 		{
 			locationMan.LocationsUpdated += (sender, e) => {
 				if (this.LocationReceived != null) {
@@ -61,17 +66,7 @@ namespace ARTest.iOS
 
 			locationMan.StartUpdatingLocation ();
 			locationMan.StartUpdatingHeading();
-			/*motionMan.MagnetometerUpdateInterval = 0.1;
-			motionMan.StartMagnetometerUpdates (NSOperationQueue.CurrentQueue, (data, CLError) => 
-				{
-					if (this.MagnetReceived != null) {
-						this.MagnetReceived (this, new Matrix3EventArgs {
-							X = data.MagneticField.X,
-							Y = data.MagneticField.Y,
-							Z = data.MagneticField.Z
-						});
-					}					
-				});*/
+
 			motionMan.AccelerometerUpdateInterval = 0.1;
 			motionMan.StartAccelerometerUpdates (NSOperationQueue.CurrentQueue, (data, error) =>
 				{
@@ -94,6 +89,8 @@ namespace ARTest.iOS
 						});
 					}					
 				});
+
+			return true;
 		}
 	}
 }

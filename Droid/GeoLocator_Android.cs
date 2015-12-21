@@ -21,7 +21,12 @@ namespace ARTest.Android
 		public event OffsetEventHandler OffsetReceived;
 		public event GyroEventHandler GyroReceived;
 
-		public async Task StartAsync()
+		public Task<bool> StartAsync()
+		{
+			return Task.Run(() => Start());
+		}
+
+		public bool Start()
 		{
 			var context = Forms.Context;
 			var locationMan = context.GetSystemService(Context.LocationService) 
@@ -88,6 +93,8 @@ namespace ARTest.Android
 			sensorMan.RegisterListener (mySensorListner, accel, SensorDelay.Normal);
 			sensorMan.RegisterListener (mySensorListner, magnet, SensorDelay.Normal);
 			sensorMan.RegisterListener (mySensorListner, gyro, SensorDelay.Normal);
+
+			return true;
 		}
 
 		class MyLocationListener : Java.Lang.Object, ILocationListener

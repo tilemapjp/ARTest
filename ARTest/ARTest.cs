@@ -10,11 +10,6 @@ namespace ARTest
 		IGeoLocator geoLocator;
 		CameraOrientation cameraCalc;
 
-		Button buttonStartGps = new Button
-		{
-			Text = "Start GPS"
-		};
-
 		Label labelLatLon = new Label
 		{
 			HorizontalTextAlignment = TextAlignment.Center
@@ -48,6 +43,7 @@ namespace ARTest
 			HorizontalTextAlignment = TextAlignment.Center
 		};
 
+		// レイアウト作成
 		public App ()
 		{
 			// The root page of your application
@@ -55,51 +51,35 @@ namespace ARTest
 				Content = new StackLayout {
 					VerticalOptions = LayoutOptions.Center,
 					Children = {
-						new Label {
-							HorizontalTextAlignment = TextAlignment.Center,
-							Text = "Lat/Long"
-						},
+						CreateLabel("Lat/Long"),
 						labelLatLon,
-						new Label {
-							HorizontalTextAlignment = TextAlignment.Center,
-							Text = "Magnetic Field"							
-						},
+						CreateLabel("Magnetic Field"),							
 						labelMagnet,
-						new Label {
-							HorizontalTextAlignment = TextAlignment.Center,
-							Text = "Accelerometer"							
-						},
+						CreateLabel("Accelerometer"),							
 						labelAccel,
-						new Label {
-							HorizontalTextAlignment = TextAlignment.Center,
-							Text = "Direction"
-						},
+						CreateLabel("Direction"),
 						labelDirection,
-						new Label {
-							HorizontalTextAlignment = TextAlignment.Center,
-							Text = "Elevation"
-						},
+						CreateLabel("Elevation"),
 						labelElevation,
-						new Label {
-							HorizontalTextAlignment = TextAlignment.Center,
-							Text = "Horizontal angle"
-						},
+						CreateLabel("Horizontal angle"),
 						labelHorizontal,
-						new Label {
-							HorizontalTextAlignment = TextAlignment.Center,
-							Text = "True North Offset"
-						},
+						CreateLabel("True North Offset"),
 						labelTrueNorth,
-						new Label {
-							HorizontalTextAlignment = TextAlignment.Center,
-							Text = "Gyro Sensor"
-						},
+						CreateLabel("Gyro Sensor"),
 						labelGyro
 					}
 				}
 			};
 		}
 
+		protected Label CreateLabel(String label) {
+			return new Label {
+				HorizontalTextAlignment = TextAlignment.Center,
+				Text = label
+			};
+		}
+
+		// 計算結果のUI書き込み
 		protected void WriteToText()
 		{
 			labelMagnet.Text = String.Format ("X:{0:0.000} Y:{1:0.000} Z: {2:0.000}", cameraCalc.MagnetX, cameraCalc.MagnetY, cameraCalc.MagnetZ);
@@ -115,9 +95,11 @@ namespace ARTest
 			geoLocator = DependencyService.Get<IGeoLocator>();
 			cameraCalc = new CameraOrientation ();
 
+			// 位置データを受信した際の処理
 			geoLocator.LocationReceived += (_, args) => {
 				labelLatLon.Text = String.Format("{0:0.00000},{1:0.00000}", args.Latitude, args.Longitude);
 			};
+			// 磁気データを受信した際の処理
 			geoLocator.MagnetReceived += (_, args) => {
 				cameraCalc.SetMagnetValues(args.X,args.Y,args.Z);
 				cameraCalc.CalcurateOrientation();
@@ -125,6 +107,7 @@ namespace ARTest
 					WriteToText();
 				}
 			};
+			// 加速度データを受信した際の処理
 			geoLocator.AccelReceived += (_, args) => {
 				cameraCalc.SetAccelValues(args.X,args.Y,args.Z);
 				cameraCalc.CalcurateOrientation();
@@ -132,16 +115,19 @@ namespace ARTest
 					WriteToText();
 				}
 			};
+			// 磁気偏角データを受信した際の処理
 			geoLocator.OffsetReceived += (_, args) => {
 				cameraCalc.SetOffsetValue(args.offset);
 				if (cameraCalc.CalcurateOrientation()) {
 					WriteToText();
 				}
 			};
+			// ジャイロデータを受信した際の処理
 			geoLocator.GyroReceived += (_, args) => {
 				labelGyro.Text = String.Format ("X:{0:0.000} Y:{1:0.000} Z: {2:0.000}", args.X * 180 / Math.PI, args.Y * 180 / Math.PI, args.Z * 180 / Math.PI);
 			};
 				
+			// 観測開始
 			await geoLocator.StartAsync();
 		}
 
