@@ -24,18 +24,17 @@ namespace ARTest.iOS
 
 		public GeoLocator_iOS ()
 		{
+			// GPS関連マネージャ生成
 			locationMan = new CLLocationManager();
+			// GPSの利用許可をユーザに問うダイアログ表示、許可済みの時はスルーされる
 			locationMan.RequestWhenInUseAuthorization ();
+			// モーションセンサ関連マネージャ生成
 			motionMan = new CMMotionManager ();
 		}
 
-		public Task<bool> StartAsync()
+		public void Start()
 		{
-			return Task.Run(() => Start());
-		}
-
-		public bool Start()
-		{
+			// GPSリスナ登録
 			locationMan.LocationsUpdated += (sender, e) => {
 				if (this.LocationReceived != null) {
 					var l = e.Locations[e.Locations.Length - 1];
@@ -47,6 +46,7 @@ namespace ARTest.iOS
 						});
 				}
 			};
+			// 磁気コンパスリスナ登録
 			locationMan.UpdatedHeading += (sender, e) => {
 				if (this.MagnetReceived != null) {
 					this.MagnetReceived(this, new Matrix3EventArgs
@@ -56,6 +56,7 @@ namespace ARTest.iOS
 							Z = e.NewHeading.Z
 						});
 				}
+				// iOSでは磁気偏角は磁気コンパスリスナから取得
 				if (this.OffsetReceived != null) {
 					this.OffsetReceived(this, new OffsetEventArgs
 						{
@@ -64,9 +65,11 @@ namespace ARTest.iOS
 				}
 			}; 
 
+			// GPS、磁気コンパス観測開始
 			locationMan.StartUpdatingLocation ();
 			locationMan.StartUpdatingHeading();
 
+			// 加速度センサリスナ登録、観測開始
 			motionMan.AccelerometerUpdateInterval = 0.1;
 			motionMan.StartAccelerometerUpdates (NSOperationQueue.CurrentQueue, (data, error) =>
 				{
@@ -78,6 +81,8 @@ namespace ARTest.iOS
 						});
 					}					
 				});
+
+			// ジャイロセンサリスナ登録、観測開始
 			motionMan.GyroUpdateInterval = 0.1;
 			motionMan.StartGyroUpdates (NSOperationQueue.CurrentQueue, (data, error) =>
 				{
@@ -89,8 +94,6 @@ namespace ARTest.iOS
 						});
 					}					
 				});
-
-			return true;
 		}
 	}
 }

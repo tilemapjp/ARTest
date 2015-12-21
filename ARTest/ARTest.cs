@@ -10,42 +10,27 @@ namespace ARTest
 		IGeoLocator geoLocator;
 		CameraOrientation cameraCalc;
 
-		Label labelLatLon = new Label
-		{
-			HorizontalTextAlignment = TextAlignment.Center
-		};
-		Label labelDirection = new Label
-		{
-			HorizontalTextAlignment = TextAlignment.Center
-		};
-		Label labelElevation = new Label
-		{
-			HorizontalTextAlignment = TextAlignment.Center
-		};
-		Label labelHorizontal = new Label
-		{
-			HorizontalTextAlignment = TextAlignment.Center
-		};
-		Label labelAccel = new Label
-		{
-			HorizontalTextAlignment = TextAlignment.Center
-		};
-		Label labelMagnet = new Label
-		{
-			HorizontalTextAlignment = TextAlignment.Center
-		};
-		Label labelTrueNorth = new Label
-		{
-			HorizontalTextAlignment = TextAlignment.Center
-		};
-		Label labelGyro = new Label
-		{
-			HorizontalTextAlignment = TextAlignment.Center
-		};
+		Label labelLatLon;
+		Label labelDirection;
+		Label labelElevation;
+		Label labelHorizontal;
+		Label labelAccel;
+		Label labelMagnet;
+		Label labelTrueNorth;
+		Label labelGyro;
 
 		// レイアウト作成
 		public App ()
 		{
+			labelLatLon = CreateLabel ();
+			labelDirection = CreateLabel ();
+			labelElevation = CreateLabel ();
+			labelHorizontal = CreateLabel ();
+			labelAccel = CreateLabel ();
+			labelMagnet = CreateLabel ();
+			labelTrueNorth = CreateLabel ();
+			labelGyro = CreateLabel ();
+
 			// The root page of your application
 			MainPage = new ContentPage {
 				Content = new StackLayout {
@@ -72,7 +57,7 @@ namespace ARTest
 			};
 		}
 
-		protected Label CreateLabel(String label) {
+		protected Label CreateLabel(String label = "") {
 			return new Label {
 				HorizontalTextAlignment = TextAlignment.Center,
 				Text = label
@@ -90,10 +75,10 @@ namespace ARTest
 			labelTrueNorth.Text = String.Format("{0:0.00000}", cameraCalc.AzimuthOffset);
 		}
 
-		protected override async void OnStart ()
+		protected override void OnStart ()
 		{
 			geoLocator = DependencyService.Get<IGeoLocator>();
-			cameraCalc = new CameraOrientation ();
+			cameraCalc = CameraOrientation.manager ();
 
 			// 位置データを受信した際の処理
 			geoLocator.LocationReceived += (_, args) => {
@@ -128,7 +113,7 @@ namespace ARTest
 			};
 				
 			// 観測開始
-			await geoLocator.StartAsync();
+			geoLocator.Start();
 		}
 
 		protected override void OnSleep ()

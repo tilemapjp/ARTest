@@ -38,8 +38,7 @@ namespace ARTest
 	// デバイスモーションを利用するための、共通なインターフェース
 	public interface IGeoLocator
 	{
-		bool Start();
-		Task<bool> StartAsync();
+		void Start();
 		event MagnetEventHandler MagnetReceived;
 		event AccelEventHandler AccelReceived;
 		event GyroEventHandler GyroReceived;

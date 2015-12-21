@@ -38,24 +38,26 @@ namespace ARTest
 		public double AzimuthOffset { get; private set; }
 
 		// 水平角をゼロとしたいデバイスの向きを、CameraOrientationConstantで指定。デフォルトはPortrait
-		public CameraOrientationConstant ScreenOrientation { get; private set; }
+		public CameraOrientationConstant WantScreenOrientation { get; private set; }
 
 		private bool Guard = false;
 
 		// Constructor
-		public CameraOrientation (CameraOrientationConstant wantOrientation = CameraOrientationConstant.Portrait)
+		public CameraOrientation (
+			CameraOrientationConstant wantOrientation = CameraOrientationConstant.Portrait)
 		{
 			Azimuth = 0.0;
 			Pitch   = 0.0;
 			Roll    = 0.0;
-			ScreenOrientation = wantOrientation;
+			WantScreenOrientation = wantOrientation;
 		}
 
 		// Singleton method
-		public static CameraOrientation manager()
+		public static CameraOrientation manager(
+			CameraOrientationConstant wantOrientation = CameraOrientationConstant.Portrait)
 		{
 			if (_manager == null) {
-				_manager = new CameraOrientation ();
+				_manager = new CameraOrientation (wantOrientation);
 			}
 			return _manager;
 		}
@@ -138,9 +140,11 @@ namespace ARTest
 				Pitch = tPitch;
 			var tRoll = Math.Atan2 (-g, h);
 			if (!Double.IsNaN (tRoll)) {
-				Roll = tRoll + ((double)ScreenOrientation * Math.PI / 180.0);
-				if (Roll >= Math.PI) {
+				Roll = tRoll + ((double)WantScreenOrientation * Math.PI / 180.0);
+				if (Roll > Math.PI) {
 					Roll -= Math.PI * 2.0;
+				} else if (Roll <= -1.0 * Math.PI) {
+					Roll += Math.PI * 2.0;
 				}
 			}
 

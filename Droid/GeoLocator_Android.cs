@@ -21,23 +21,25 @@ namespace ARTest.Android
 		public event OffsetEventHandler OffsetReceived;
 		public event GyroEventHandler GyroReceived;
 
-		public Task<bool> StartAsync()
-		{
-			return Task.Run(() => Start());
-		}
-
-		public bool Start()
+		public void Start()
 		{
 			var context = Forms.Context;
+			// GPS関連マネージャ生成
 			var locationMan = context.GetSystemService(Context.LocationService) 
 				as LocationManager;
+			// モーションセンサ関連マネージャ生成
 			var sensorMan = context.GetSystemService (Context.SensorService) 
 				as SensorManager;
+			// 加速度センサ
 			var accel = sensorMan.GetDefaultSensor (SensorType.Accelerometer);
+			// 磁気センサ
 			var magnet = sensorMan.GetDefaultSensor (SensorType.MagneticField);
+			// ジャイロセンサ
 			var gyro = sensorMan.GetDefaultSensor (SensorType.Gyroscope);
 
+			// GPSリスナ登録
 			locationMan.RequestLocationUpdates(LocationManager.GpsProvider, 0, 0, 
+				// GPSリスナ生成
 				new MyLocationListener (latlng =>
 					{
 						if (this.LocationReceived != null) {
@@ -47,24 +49,30 @@ namespace ARTest.Android
 									Longitude = latlng.Longitude
 								});
 						}
+						// Androidでは磁気偏角はGPSの経緯度の値より算出するため、GPSリスナ内で処理することが必要
 						if (this.OffsetReceived != null) {
+							// 地磁気計算オブジェクト生成
 							var geomagnetic = new GeomagneticField (
 								(float)latlng.Latitude, (float)latlng.Longitude, (float)latlng.Altitude, new Date().Time);
 							
 							this.OffsetReceived(this, new OffsetEventArgs 
 								{
+									// 磁気偏角の値
 									offset = geomagnetic.Declination
 								});
 						}
 					}));
 
+			// モーションセンサリスナ生成
 			var mySensorListner = new MySensorListner ( ev =>
 				{
 					var sensorType = ev.Sensor.Type;
+					// センサタイプ毎に処理分け
 					if (sensorType == SensorType.Accelerometer) {
 						if (this.AccelReceived != null) {
 							this.AccelReceived(this, new Matrix3EventArgs
 								{
+									// AndroidはiOS/Windowsと比較して、加速度センサの値の正負が逆になるため、補正
 									X = ev.Values[0] * -1.0,
 									Y = ev.Values[1] * -1.0,
 									Z = ev.Values[2] * -1.0
@@ -90,13 +98,14 @@ namespace ARTest.Android
 						}						
 					}
 				});
+
+			// モーションセンサリスナ登録
 			sensorMan.RegisterListener (mySensorListner, accel, SensorDelay.Normal);
 			sensorMan.RegisterListener (mySensorListner, magnet, SensorDelay.Normal);
 			sensorMan.RegisterListener (mySensorListner, gyro, SensorDelay.Normal);
-
-			return true;
 		}
 
+		// GPSリスナ
 		class MyLocationListener : Java.Lang.Object, ILocationListener
 		{
 			private readonly Action<Location> _onLocationChanged;
@@ -117,6 +126,7 @@ namespace ARTest.Android
 				Availability status, Bundle extras)  { }
 		}
 
+		// モーションセンサリスナ
 		class MySensorListner : Java.Lang.Object, ISensorEventListener
 		{
 			private readonly Action<SensorEvent> _onSensorChanged;
